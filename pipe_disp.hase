@@ -1,0 +1,155 @@
+//
+// Project:	MIPS V1.0
+// Entity	Pipeline Display Unit
+// File		pipe_disp.hase
+// Date:	2 July 2004
+
+// The Pipeline Display Unit is used to display the instruction
+// at each stage in the pipeline. It maintains its own internal
+// pipeline to keep track of instructions in the execution units.
+
+$class_decls
+
+/* Variables  */
+  sim_entity_id entity[9];
+  sim_entity_id ev_id;
+  t_instrn_reg packet;
+
+  t_pipe_disp_reg Pipeline[4];
+  char char_buff[20], print_buff[20];
+  int latency;
+
+  int unit_count;
+  int exe_unit_count;
+  int any;
+
+
+//classes
+
+//void pipe_disp::progressPipe();
+
+$class_defs
+
+// The following line is used only in the JAVA translation
+
+////>>>A Pipeline[0].instrn = new t_mips_instrn_set();
+
+
+$body
+
+  for (int i=0; i<=3; i++)
+  {
+   Pipeline[i].instrn.reset();
+   Pipeline[i].latency = 0;
+   Pipeline[i].status = 0;
+  }
+
+// set up entity ids
+  entity[0] = sim.get_entity_id("INSTR_FETCH");
+  entity[1] = sim.get_entity_id("INSTR_DECODE");
+  entity[2] = sim.get_entity_id("INT_EXE");
+  entity[3] = sim.get_entity_id("MEM_ACCESS");
+  entity[4] = sim.get_entity_id("WRITE_BACK");
+
+// collect latency values from Control Box (integer unit always 1)
+
+
+  unit_count = 0;
+  exe_unit_count = 0;
+  any = 0;
+
+while (1)
+{
+
+  sim_get_next(ev);
+
+  if (ev.scheduled_by() == entity[0])		// Instruction Fetch
+
+     {
+	unit_count = unit_count + 1;
+	SIM_CAST(t_instrn_reg, packet, ev);
+
+	if ((packet.status & 1) == 1)
+	  I_F = packet.instrn;
+	else
+	  I_F.reset();
+
+	if (unit_count == 5)
+	{
+	  dump_state_i();
+	  unit_count = 0;	// reset unit counter
+	}
+     }
+
+  else if (ev.scheduled_by() == entity[1])	// Instruction Decode
+
+     {
+	unit_count = unit_count + 1;
+	SIM_CAST(t_instrn_reg, packet, ev);
+
+	if ((packet.status  & 1) == 1)
+	  I_D = packet.instrn;
+	else
+	  I_D.reset();
+
+	if (unit_count == 5)
+	{
+	  dump_state_i();
+	  unit_count = 0;	// reset unit counter
+	}
+     }
+  else if (ev.scheduled_by() == entity[2])	// Integer 
+
+     {
+	unit_count = unit_count + 1;
+	SIM_CAST(t_instrn_reg, packet, ev);
+
+	if ((packet.status  & 1) == 1)
+	  EX1 = packet.instrn;
+	else
+	  EX1.reset();
+
+	if (unit_count == 5)
+	{
+	  dump_state_i();
+	  unit_count = 0;	// reset unit counter
+	}
+      }
+  else if (ev.scheduled_by() == entity[3])	// Memory Access
+
+     {
+	unit_count = unit_count + 1;
+	SIM_CAST(t_instrn_reg, packet, ev);
+
+	if ((packet.status & 1) == 1)
+	  M_A = packet.instrn;
+	else
+	  M_A.reset();
+
+	if (unit_count == 5)
+	{
+	  dump_state_i();
+	  unit_count = 0;	// reset unit counter
+	}
+     }
+
+  else if (ev.scheduled_by() == entity[4])	// Write Back
+
+     {
+	unit_count = unit_count + 1;
+	SIM_CAST(t_instrn_reg, packet, ev);
+
+	if ((packet.status & 1) == 1)
+	  W_B = packet.instrn;
+	else
+	  W_B.reset();
+
+	if (unit_count == 5)
+	{
+	  dump_state_i();
+	  unit_count = 0;	// reset unit counter
+	}
+     }
+
+}
+
